@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Plan {
+  FREE
+  PRO
+  TEAM
+}
+
+enum DocumentType {
+  BLOG
+  EMAIL
+  SOCIAL
+  PRODUCT
+  AD_COPY
+  CUSTOM
+}
+
+enum DocumentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TemplateScope {
+  SYSTEM
+  USER
+}
+
+enum ReviewStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum UsageAction {
+  GENERATION
+  REVIEW
+  REWRITE
+  EXPORT
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @db.Uuid
+  email     String   @unique
+  name      String?
+  avatarUrl String?  @map("avatar_url")
+  plan      Plan     @default(FREE)
+  credits   Int      @default(50)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  documents  Document[]
+  templates  Template[]
+  reviews    Review[]
+  usageLogs  UsageLog[]
+
+  @@map("users")
+}
+
+model Template {
+  id          String        @id @default(cuid())
+  userId      String?       @map("user_id") @db.Uuid
+  scope       TemplateScope @default(USER)
+  name        String
+  slug        String
+  description String        @default("")
+  type        DocumentType  @default(CUSTOM)
+  tone        String        @default("professional")
+  prompt      String        @db.Text
+  isPublic    Boolean       @default(false) @map("is_public")
+  isActive    Boolean       @default(true) @map("is_active")
+  usageCount  Int           @default(0) @map("usage_count")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents Document[]
+  usageLogs UsageLog[]
+
+  @@unique([scope, slug, userId])
+  @@index([scope, isPublic, isActive])
+  @@index([userId])
+  @@map("templates")
+}
+
+model Document {
+  id         String         @id @default(cuid())
+  userId     String         @map("user_id") @db.Uuid
+  templateId String?        @map("template_id")
+  title      String
+  content    String         @default("") @db.Text
+  type       DocumentType   @default(CUSTOM)
+  tone       String         @default("professional")
+  status     DocumentStatus @default(DRAFT)
+  wordCount  Int            @default(0) @map("word_count")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template  Template?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  reviews   Review[]
+  usageLogs UsageLog[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@index([templateId])
+  @@map("documents")
+}
+
+model Review {
+  id         String       @id @default(cuid())
+  userId     String       @map("user_id") @db.Uuid
+  documentId String       @map("document_id")
+  rating     Int?
+  score      Float?
+  summary    String       @default("") @db.Text
+  feedback   String       @default("") @db.Text
+  status     ReviewStatus @default(PENDING)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document  Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  usageLogs UsageLog[]
+
+  @@index([documentId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("reviews")
+}
+
+model UsageLog {
+  id           String      @id @default(cuid())
+  userId       String      @map("user_id") @db.Uuid
+  documentId   String?     @map("document_id")
+  templateId   String?     @map("template_id")
+  reviewId     String?     @map("review_id")
+  action       UsageAction @default(GENERATION)
+  prompt       String      @default("") @db.Text
+  tokensUsed   Int         @default(0) @map("tokens_used")
+  creditsSpent Int         @default(1) @map("credits_spent")
+  model        String      @default("gpt-4o-mini")
+  metadata     Json?
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  template Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  review   Review?   @relation(fields: [reviewId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, action, createdAt(sort: Desc)])
+  @@map("usage_logs")
+}
