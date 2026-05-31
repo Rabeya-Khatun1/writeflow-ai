@@ -40,9 +40,11 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
       setError("Invalid email or password");
       return;
     }
-
+console.log("EMAIL:", email)
+console.log("PASSWORD:", password)
     router.push(redirectTo || "/dashboard");
     router.refresh();
+
   }
 
   function fillDemo(email: string) {
