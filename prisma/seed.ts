@@ -47,6 +47,15 @@ const SYSTEM_TEMPLATES: {
     prompt:
       "Write a product description highlighting benefits, features, and a compelling call to action.",
   },
+  {
+    slug: "ad-copy",
+    name: "Ad Copy",
+    description: "Short persuasive ad copy for paid channels",
+    type: "AD_COPY",
+    tone: "persuasive",
+    prompt:
+      "Write compelling ad copy with a strong headline, primary text, and a clear call to action. Keep it concise and attention-grabbing.",
+  },
 ];
 
 async function main() {

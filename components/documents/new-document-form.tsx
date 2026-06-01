@@ -86,10 +86,12 @@ export function NewDocumentForm() {
             </select>
           </div>
           {error && (
-            <p className="text-sm text-red-600">{error}</p>
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-200" role="alert">
+              {error}
+            </div>
           )}
           <Button type="submit" disabled={loading || !title.trim()}>
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Create & open editor
           </Button>
         </form>

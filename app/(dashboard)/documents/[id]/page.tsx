@@ -18,7 +18,7 @@ export default async function DocumentPage({ params }: PageProps) {
   if (!document) notFound();
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
+    <div className="flex flex-col">
       <DocumentEditor document={document} />
     </div>
   );

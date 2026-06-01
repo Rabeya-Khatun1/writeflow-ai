@@ -24,6 +24,7 @@ export function DocumentEditor({ document: initial }: DocumentEditorProps) {
   const [prompt, setPrompt] = useState("");
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [rewriting, setRewriting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
 
@@ -78,6 +79,30 @@ export function DocumentEditor({ document: initial }: DocumentEditorProps) {
       setError(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setGenerating(false);
+    }
+  }
+
+  async function handleRewrite() {
+    if (!content.trim()) {
+      setError("There is no content to rewrite.");
+      return;
+    }
+
+    setRewriting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/ai/rewrite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: content, tone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Rewrite failed");
+      setContent(data.rewrittenText);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Rewrite failed");
+    } finally {
+      setRewriting(false);
     }
   }
 
@@ -189,21 +214,42 @@ export function DocumentEditor({ document: initial }: DocumentEditorProps) {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/50">
+        <div className="rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-200">
           {error}
-        </p>
+        </div>
       )}
 
       <div className="flex min-h-0 flex-1 flex-col space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="content">Content</Label>
-          <span className="text-xs text-zinc-500">{countWords(content)} words</span>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <Label htmlFor="content">Content</Label>
+            <p className="text-xs text-zinc-500">Use the tone selector above, then rewrite the current content.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-zinc-500">{countWords(content)} words</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRewrite}
+              disabled={rewriting}
+            >
+              {rewriting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Rewriting…
+                </>
+              ) : (
+                "Rewrite"
+              )}
+            </Button>
+          </div>
         </div>
         <Textarea
           id="content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="min-h-[400px] flex-1 font-mono text-sm leading-relaxed"
+          style={{ minHeight: 400 }}
+          className="flex-1 font-mono text-sm leading-relaxed"
           placeholder="Your content will appear here after generation, or start typing…"
         />
       </div>
