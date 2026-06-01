@@ -4,8 +4,8 @@ generator client {
 
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -20,12 +20,12 @@ model User {
   plan     Plan    @default(FREE)
   credits  Int     @default(50)
 
-  accounts  Account[]
-  sessions  Session[]
-  templates Template[]
-  documents Document[]
-  reviews   Review[]
-  usageLogs UsageLog[]
+  accounts  Account[]  @relation("UserAccounts")
+  sessions  Session[]  @relation("UserSessions")
+  templates Template[] @relation("UserTemplates")
+  documents Document[] @relation("UserDocuments")
+  reviews   Review[]   @relation("UserReviews")
+  usageLogs UsageLog[] @relation("UserUsageLogs")
 }
 
 model Account {
@@ -35,7 +35,7 @@ model Account {
   provider          String
   providerAccountId String
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation("UserAccounts", fields: [userId], references: [id])
 }
 
 model Session {
@@ -44,7 +44,7 @@ model Session {
   userId       String
   expires      DateTime
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation("UserSessions", fields: [userId], references: [id])
 }
 
 model VerificationToken {
@@ -112,9 +112,9 @@ model Template {
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  documents Document[]
-  usageLogs UsageLog[]
+  user      User?      @relation("UserTemplates", fields: [userId], references: [id], onDelete: Cascade)
+  documents Document[] @relation("TemplateDocuments")
+  usageLogs UsageLog[] @relation("TemplateUsageLogs")
 
   @@unique([scope, slug, userId])
   @@index([scope, isPublic, isActive])
@@ -135,10 +135,10 @@ model Document {
   createdAt  DateTime       @default(now()) @map("created_at")
   updatedAt  DateTime       @updatedAt @map("updated_at")
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template  Template?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  reviews   Review[]
-  usageLogs UsageLog[]
+  user      User       @relation("UserDocuments", fields: [userId], references: [id], onDelete: Cascade)
+  template  Template?  @relation("TemplateDocuments", fields: [templateId], references: [id], onDelete: SetNull)
+  reviews   Review[]   @relation("DocumentReviews")
+  usageLogs UsageLog[] @relation("DocumentUsageLogs")
 
   @@index([userId, updatedAt(sort: Desc)])
   @@index([templateId])
@@ -157,9 +157,9 @@ model Review {
   createdAt  DateTime     @default(now()) @map("created_at")
   updatedAt  DateTime     @updatedAt @map("updated_at")
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document  Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  usageLogs UsageLog[]
+  user      User       @relation("UserReviews", fields: [userId], references: [id], onDelete: Cascade)
+  document  Document   @relation("DocumentReviews", fields: [documentId], references: [id], onDelete: Cascade)
+  usageLogs UsageLog[] @relation("ReviewUsageLogs")
 
   @@index([documentId, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
@@ -180,10 +180,10 @@ model UsageLog {
   metadata     Json?
   createdAt    DateTime    @default(now()) @map("created_at")
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
-  template Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  review   Review?   @relation(fields: [reviewId], references: [id], onDelete: SetNull)
+  user     User      @relation("UserUsageLogs", fields: [userId], references: [id], onDelete: Cascade)
+  document Document? @relation("DocumentUsageLogs", fields: [documentId], references: [id], onDelete: SetNull)
+  template Template? @relation("TemplateUsageLogs", fields: [templateId], references: [id], onDelete: SetNull)
+  review   Review?   @relation("ReviewUsageLogs", fields: [reviewId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, action, createdAt(sort: Desc)])

@@ -4,14 +4,14 @@ import { prisma } from "@/lib/db/prisma";
 
 function toDTO(user: {
   id: string;
-  email: string;
+  email: string | null;
   name: string | null;
   plan: Plan;
   credits: number;
 }): UserDTO {
   return {
     id: user.id,
-    email: user.email,
+    email: user.email ?? "",
     name: user.name,
     plan: user.plan,
     credits: user.credits,
