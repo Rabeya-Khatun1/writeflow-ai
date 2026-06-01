@@ -5,7 +5,7 @@ import { ThemeProvider } from "next-themes";
 
 export function AuthSessionProvider({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system">
+    <ThemeProvider attribute="class" defaultTheme="system" enableColorScheme={false} enableSystem>
       <SessionProvider>{children}</SessionProvider>
     </ThemeProvider>
   );
